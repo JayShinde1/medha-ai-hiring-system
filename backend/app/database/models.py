@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
+
 class Users(Base):
     __tablename__ = 'users'
 
@@ -28,13 +29,14 @@ class Candidate_Profiles(Base):
     phone = Column(String(20), unique = True)
     github_url = Column(String(255))
     linkedin_url = Column(String(255))
-    portfolio_url = Column(String(255)) #optional
+    portfolio_url = Column(String(255))
     experience_yrs = Column(Integer, default = 0)
     current_location = Column(String(100))
     created_at = Column(DateTime(timezone = False), server_default = func.now(), nullable = False)
 
     user = relationship("Users", back_populates = "candidate_profile")
     resumes = relationship("Resume", back_populates = "candidate")
+    applications = relationship("Applications", back_populates = "candidate")
 
 
 class Recruiter_Profiles(Base):
@@ -92,14 +94,26 @@ class Applications(Base):
     candidate_id = Column(Integer, ForeignKey("candidate_profiles.id", ondelete = "CASCADE"), nullable = False)
     job_id = Column(Integer, ForeignKey("jobs.id", ondelete = "CASCADE"), nullable = False)
     resume_id = Column(Integer, ForeignKey("resumes.id", ondelete = "CASCADE"), nullable = False)
+
     status = Column(Enum("applied", "shortlisted", "rejected", "hired", name = "application_status_enum"), default = "applied", nullable = False)
+
     applied_at = Column(DateTime(timezone = False), server_default = func.now(), nullable = False)
 
     job = relationship("Jobs", back_populates = "applications")
     resume = relationship("Resume", back_populates = "applications")
-    ai_evaluation = relationship("AI_Evaluations", back_populates = "application", uselist = False)
-    behavioral_assessment = relationship("Behavioral_Assessments", back_populates = "application", uselist = False)
-    candidate = relationship("Candidate_Profiles")
+    candidate = relationship("Candidate_Profiles", back_populates = "applications")
+
+    ai_evaluation = relationship(
+        "AI_Evaluations",
+        back_populates = "application",
+        uselist = False
+    )
+
+    behavioral_assessments = relationship(
+        "Behavioral_Assessments",
+        back_populates = "application",
+        uselist = False
+    )
 
 
 class AI_Evaluations(Base):
@@ -107,13 +121,16 @@ class AI_Evaluations(Base):
 
     id = Column(Integer, primary_key = True, index = True)
     application_id = Column(Integer, ForeignKey("applications.id", ondelete = "CASCADE"), nullable = False)
+
     semantic_score = Column(Float)
     keyword_score = Column(Float)
     technical_score = Column(Float)
     overall_score = Column(Float)
+
     strengths = Column(JSON)
     weaknesses = Column(JSON)
     recommendation = Column(Text)
+
     created_at = Column(DateTime(timezone = False), server_default = func.now(), nullable = False)
 
     application = relationship("Applications", back_populates = "ai_evaluation")
@@ -124,15 +141,20 @@ class Behavioral_Assessments(Base):
 
     id = Column(Integer, primary_key = True, index = True)
     application_id = Column(Integer, ForeignKey("applications.id", ondelete = "CASCADE"), nullable = False)
+
     candidate_response = Column(Text)
+
     communication_score = Column(Float)
     accountability_score = Column(Float)
     problem_solving_score = Column(Float)
     adaptability_score = Column(Float)
     confidence_score = Column(Float)
+
     behavioral_score = Column(Float)
+
     overall_feedback = Column(Text)
-    detailed_analysis = Column(JSON) 
+    detailed_analysis = Column(JSON)
+
     created_at = Column(DateTime(timezone = False), server_default = func.now(), nullable = False)
 
     application = relationship("Applications", back_populates = "behavioral_assessments")
